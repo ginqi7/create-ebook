@@ -98,16 +98,15 @@ class MarkdownToEPUB:
             print(f"✗ Failed to add file {md_path}: {e}")
             return False
 
-    def add_image_file(self, img_path: Path) -> bool:
+    def add_image_file(self, img_path: Path, parent_path: str) -> bool:
         """Add a single image."""
-
         try:
             image_content = open(img_path, "rb").read()
-
+            prefix_len = len(parent_path)
             img = epub.EpubImage(
                 uid=img_path.name,
-                file_name=img_path.name,
-                media_type="image/png",
+                file_name=str(img_path)[prefix_len:],
+                media_type=self.image_media_type(img_path),
                 content=image_content,
             )
             self.book.add_item(img)
@@ -116,6 +115,34 @@ class MarkdownToEPUB:
         except Exception as e:
             print(f"✗ Failed to add file {img_path}: {e}")
             return False
+
+    def find_images_glob(self, directory):
+        """Use glob to recursively find images"""
+
+        image_patterns = [
+            "**/*.jpg",
+            "**/*.jpeg",
+            "**/*.png",
+            "**/*.gif",
+            "**/*.bmp",
+            "**/*.tiff",
+            "**/*.webp",
+            "**/*.svg",
+            "**/*.JPG",
+            "**/*.JPEG",
+            "**/*.PNG",
+            "**/*.GIF",
+            "**/*.BMP",
+            "**/*.TIFF",
+            "**/*.WEBP",
+            "**/*.SVG",
+        ]
+
+        image_files = []
+        for pattern in image_patterns:
+            image_files.extend(directory.glob(pattern))
+
+        return sorted(set(image_files))
 
     def add_markdown_directory(
         self, directory_path: str, pattern: str = "*.md"
@@ -148,10 +175,10 @@ class MarkdownToEPUB:
         print(f"Found {len(md_files)} Markdown files.")
 
         # Find All Images
-        img_files = list(directory.glob(pattern))
-        img_files.extend(directory.glob("*.png"))
+        img_files = self.find_images_glob(directory)
+        print(f"Found {len(img_files)} Image files")
         for img_file in img_files:
-            self.add_image_file(img_file)
+            self.add_image_file(img_file, directory_path)
 
         return success_count > 0
 
@@ -182,6 +209,18 @@ class MarkdownToEPUB:
             print(f"✗ Failed to add CSS styles: {{e}}")
             return False
 
+    def image_media_type(self, image_path: Path) -> str:
+        ext = image_path.suffix.lower()
+        if ext in [".jpg", ".jpeg"]:
+            return "image/jpeg"
+        elif ext == ".png":
+            return "image/png"
+        elif ext == ".gif":
+            return "image/gif"
+        else:
+            print(f"Unsupported image format: {ext}")
+            return "image/png"
+
     def add_cover_image(self, image_path: str) -> bool:
         """Add cover image"""
 
@@ -195,16 +234,7 @@ class MarkdownToEPUB:
                 cover_content = f.read()
 
             # Determine Image Type
-            ext = image_path.suffix.lower()
-            if ext in [".jpg", ".jpeg"]:
-                media_type = "image/jpeg"
-            elif ext == ".png":
-                media_type = "image/png"
-            elif ext == ".gif":
-                media_type = "image/gif"
-            else:
-                print(f"Unsupported image format: {ext}")
-                return False
+            media_type = self.image_media_type(image_path)
 
             # Set Cover
             self.book.set_cover(f"cover{ext}", cover_content)
@@ -446,6 +476,7 @@ def main():
     BOOK_META["author"] = author
     BOOK_META["cover_path"] = cover_path
     BOOK_META["language"] = language
+    BOOK_META["markdown_dir"] = markdown_dir
 
     print("🚀 Starting the conversion of Markdown files to EPUB...")
 
