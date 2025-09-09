@@ -10,7 +10,7 @@ import os
 import re
 import uuid
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional
 import markdown
 from ebooklib import epub
 from bs4 import BeautifulSoup
@@ -102,7 +102,7 @@ class MarkdownToEPUB:
         """Add a single image."""
         try:
             image_content = open(img_path, "rb").read()
-            prefix_len = len(parent_path)
+            prefix_len = len(parent_path) + 1
             img = epub.EpubImage(
                 uid=img_path.name,
                 file_name=str(img_path)[prefix_len:],
@@ -460,7 +460,9 @@ def main():
         markdown_dir = sys.argv[1]
     print(f"The resource directory is located at '{markdown_dir}'.")
 
-    title = markdown_dir.split("/")[-2]
+    # markdown_dir format
+    markdown_dir = str(Path(markdown_dir))
+    title = markdown_dir.split("/")[-1]
     output_file = f"./output/{title}.epub"
     author = "Unknown"
     cover_path = markdown_dir + "/cover.png"
