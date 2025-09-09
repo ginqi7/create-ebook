@@ -286,11 +286,6 @@ class MarkdownToEPUB:
         # Clean HTML Content
         soup = BeautifulSoup(html_content, "html.parser")
 
-        # Remove any potential first h1 tag (to avoid duplication).
-        first_h1 = soup.find("h1")
-        if first_h1:
-            first_h1.decompose()
-
         cleaned_content = str(soup)
         return cleaned_content
 
