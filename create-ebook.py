@@ -34,6 +34,7 @@ class MarkdownToEPUB:
         # Configure Markdown Parser
         self.md = markdown.Markdown(
             extensions=[
+                "markdown.extensions.sane_lists",
                 "markdown.extensions.extra",  # Support for tables, code blocks, and more.
                 "markdown.extensions.codehilite",  # Code Highlighting
                 "markdown.extensions.toc",  # Table of Contents
@@ -236,6 +237,7 @@ class MarkdownToEPUB:
             # Determine Image Type
             media_type = self.image_media_type(image_path)
 
+            ext = image_path.suffix.lower()
             # Set Cover
             self.book.set_cover(f"cover{ext}", cover_content)
             print(f"✓ Cover added: {image_path.name}")
@@ -460,13 +462,16 @@ def main():
     title = markdown_dir.split("/")[-1]
     output_file = f"./output/{title}.epub"
     author = "Unknown"
-    cover_path = markdown_dir + "/cover.png"
-    language = "en"
 
-    if os.path.exists(cover_path):
-        cover_image = cover_path
-    else:
-        cover_image = None
+    language = "en"
+    for ext in ["png", "jpg"]:
+        cover_path = markdown_dir + f"/cover.{ext}"
+        if os.path.exists(cover_path):
+            cover_image = cover_path
+            break
+        else:
+            cover_image = None
+
     BOOK_META = {}
     BOOK_META["title"] = title
     BOOK_META["output_file"] = output_file
